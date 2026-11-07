@@ -14,6 +14,7 @@ async function request(path, method = "GET") {
 const checks = [
   ["public page", async () => { const r = await request("/"); assert.equal(r.status, 200); assert.match(await r.text(), /ਸਾਥੀ|Saathi/); }],
   ["microphone asset", async () => { const r = await request("/saathi-microphone.js"); assert.equal(r.status, 200); assert.match(await r.text(), /registerProcessor\("saathi-microphone"/); }],
+  ["notification worker", async () => { const r = await request("/sw.js"); assert.equal(r.status, 200); assert.match(await r.text(), /showNotification/); }],
   ["configured and locked for visitors", async () => {
     const r = await request("/api/status"); assert.equal(r.status, 200); assert.match(r.headers.get("cache-control") || "", /no-store/);
     assert.deepEqual(await r.json(), { configured: true, authenticated: false, isOwner: false, needsLogin: true });
@@ -21,6 +22,8 @@ const checks = [
   ["live sessions require family access", async () => { const r = await request("/api/live-session", "POST"); assert.equal(r.status, 401); assert.match(r.headers.get("cache-control") || "", /no-store/); }],
   ["translations require family access", async () => { const r = await request("/api/process", "POST"); assert.equal(r.status, 401); }],
   ["feedback stays organizer-only", async () => { const r = await request("/api/feedback"); assert.equal(r.status, 403); }],
+  ["appointments require family access", async () => { const r = await request("/api/calendar-status"); assert.equal(r.status, 401); }],
+  ["calendar refresh requires family access", async () => { const r = await request("/api/calendar-sync", "POST"); assert.equal(r.status, 401); }],
 ];
 const results = await Promise.allSettled(checks.map(async ([name, run]) => { await run(); return name; }));
 let failed = false;

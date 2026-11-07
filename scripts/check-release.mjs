@@ -66,7 +66,7 @@ export async function checkRelease(root = defaultRoot) {
 
   const publicRoot = path.join(root, "public");
   const publicFiles = await filesBelow(publicRoot);
-  for (const required of ["saathi-microphone.js", "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png"]) {
+  for (const required of ["saathi-microphone.js", "sw.js", "manifest.webmanifest", "favicon.svg", "apple-touch-icon.png"]) {
     assert(publicFiles.includes(required), `Missing required public asset: ${required}`);
   }
   for (const relative of publicFiles) {

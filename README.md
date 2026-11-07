@@ -1,8 +1,24 @@
 # Saathi · ਸਾਥੀ
 
-A family assistant for live English ↔ Indian Punjabi conversations and Punjabi explanations of English letters and emails. Built with React, Vinext, Cloudflare Workers/D1, and Gemini.
+A family assistant for live English ↔ Indian Punjabi conversations, Punjabi explanations of English letters and emails, and iCloud appointments with phone reminders. Built with React, Vinext, Cloudflare Workers/D1, and Gemini.
 
-Production: https://saathi-punjabi-family.guri007.chatgpt.site
+Production: [Saathi family app](https://saathi-punjabi-family.guri007.chatgpt.site)
+
+Source: [maangm53-cmd/Saathi](https://github.com/maangm53-cmd/Saathi)
+
+The initial GitHub import, [`0c29fe5`](https://github.com/maangm53-cmd/Saathi/commit/0c29fe5b8a33af089b53eb136c5a9f434e27b6cc), passed [Saathi CI](https://github.com/maangm53-cmd/Saathi/actions/runs/42321416306). Each later release still requires successful CI for its own exact revision.
+
+## Calendar setup and reminders
+
+1. As the family organizer, open **Appointments → Family calendar setup**. Create a dedicated **app-specific password** at [Apple Account](https://account.apple.com), following [Apple’s instructions](https://support.apple.com/en-us/102654). Enter the Apple Account email and that password in Saathi; never use the normal Apple Account password.
+2. Select one to five calendars and the time zone where the grandparents attend appointments. The next 30 days of selected events are visible to everyone with the family access code. Choose a reminder lead time of about 15, 30, 60 minutes, or one day.
+3. On each iPhone/iPad, open Saathi in Safari, choose **Share → Add to Home Screen**, and reopen it from that icon. On iOS/iPadOS 16.4 or later, tap **Enable on this phone**, grant notification permission, and send a test. Registration and permission apply separately to each phone.
+
+Saathi’s CalDAV client only reads iCloud calendars; it does not create, edit, or delete iCloud events. Apple’s app-specific password itself is not a read-only scoped credential. Disconnecting the calendar removes Saathi’s connection and cached appointments while leaving the iCloud events intact.
+
+iCloud credentials, appointment titles/notes/locations, and push subscriptions are encrypted in the server database. Event times and delivery bookkeeping are retained to schedule reminders. Appointment details go to Google only when a family member requests a Punjabi explanation. Lock-screen notifications contain a generic Punjabi reminder; appointment details are shown after opening Saathi.
+
+This version sends reminders for **timed events only**; all-day events remain visible in the appointment list. Delivery is approximate and depends on fresh calendar data, phone permission, network access, and a functioning background schedule. Automatic reminders require a separately created and linked Sites schedule with a verified successful run. The app shows the last check and keeps readiness pending until verified; enabling notifications or deploying the app alone does not activate that schedule. Test notification delivery on the actual iPhone before relying on it.
 
 ## Development
 
@@ -57,6 +73,8 @@ To roll back application code, deploy the last known-good saved Sites version. C
 - `lib/live-config.ts`, `lib/gemini-live.ts`: constrained short-lived Live credentials.
 - `lib/gemini.ts`: letter translation, explanation, and speech.
 - `lib/server.ts`, `lib/security.ts`: authorization, limits, and encrypted settings.
+- `app/calendar-panel.tsx`, `lib/icloud-calendar.ts`, `lib/calendar-service.ts`: calendar setup, read-only iCloud sync, appointment explanations, and reminder delivery.
+- `public/sw.js`: phone notification handling.
 - `db/schema.ts`, `drizzle/`: schema and migrations.
 - `tests/`: automatically discovered tests.
 
