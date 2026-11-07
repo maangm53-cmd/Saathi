@@ -43,6 +43,17 @@ export async function decryptKey(value: string, secret: string): Promise<string>
   const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unbase64(iv), additionalData: encoder.encode("saathi-gemini-key-v1") }, await aesKey(secret), unbase64(body));
   return decoder.decode(decrypted);
 }
+export type PrivatePurpose = "icloud-connection" | "appointment-details" | "push-subscription" | "push-vapid";
+export async function encryptPrivate(value: unknown, secret: string, purpose: PrivatePurpose): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder.encode(`saathi:${purpose}:v1`) }, await aesKey(secret), encoder.encode(JSON.stringify(value)));
+  return `${base64(iv)}.${base64(new Uint8Array(ciphertext))}`;
+}
+export async function decryptPrivate<T>(value: string, secret: string, purpose: PrivatePurpose): Promise<T> {
+  const [iv, body] = value.split(".");
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unbase64(iv), additionalData: encoder.encode(`saathi:${purpose}:v1`) }, await aesKey(secret), unbase64(body));
+  return JSON.parse(decoder.decode(plaintext)) as T;
+}
 export function newSalt(): string { return base64(crypto.getRandomValues(new Uint8Array(16))); }
 export function normalizeApiKey(input: unknown): string {
   const invalid = () => new HttpError(400, "Copy the complete Gemini API key from Google AI Studio and paste it here. The key must not contain spaces or extra text.");

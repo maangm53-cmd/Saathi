@@ -8,6 +8,13 @@
       "when": 1794006763904,
       "tag": "0000_many_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794013485483,
+      "tag": "0001_bored_nehzno",
+      "breakpoints": true
     }
   ]
 }

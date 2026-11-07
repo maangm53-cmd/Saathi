@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LiveConversation } from "@/lib/live-conversation";
-import { ArrowLeft, AudioLines, Camera, Check, ChevronRight, CircleHelp, Home as HomeIcon, LockKeyhole, MailOpen, Mic, Pause, Play, Settings, ShieldCheck, Square, ThumbsDown, ThumbsUp, Volume2, X } from "lucide-react";
+import { ArrowLeft, AudioLines, CalendarDays, Camera, Check, ChevronRight, CircleHelp, Home as HomeIcon, LockKeyhole, MailOpen, Mic, Pause, Play, Settings, ShieldCheck, Square, ThumbsDown, ThumbsUp, Volume2, X } from "lucide-react";
+import { CalendarPanel } from "./calendar-panel";
 
-type Screen = "home" | "conversation" | "mail" | "settings";
+type Screen = "home" | "conversation" | "mail" | "settings" | "appointments";
 type Direction = "en-pa" | "pa-en";
 type LiveState = "connecting" | "listening" | "translating" | "speaking" | "paused" | "ended";
 type LiveTranscript = { source: string; translation: string; final: boolean };
@@ -135,6 +136,7 @@ export default function Saathi() {
 
   useEffect(() => {
     mounted.current = true;
+    if (new URLSearchParams(window.location.search).get("screen") === "appointments") setScreen("appointments");
     refreshStatus().catch(e => setError(message(e)));
     const sessionExpired = () => {
       stopLive(true); stopPlayback(); generation.current += 1; activeRequest.current?.abort();
@@ -327,9 +329,10 @@ export default function Saathi() {
       {status?.authenticated && !status.configured && !status.isOwner && <section className="welcome"><h1 lang="pa">ਥੋੜ੍ਹੀ ਉਡੀਕ ਕਰੋ ਜੀ</h1><p>ਪਰਿਵਾਰ ਵੱਲੋਂ ਸਾਥੀ ਦਾ ਕਨੈਕਸ਼ਨ ਕਰਨਾ ਬਾਕੀ ਹੈ।</p><p className="english">Your family is still connecting Saathi. Please ask them to complete setup.</p><button className="button" onClick={() => void refreshStatus().catch(e => setError(message(e)))}>ਫਿਰ ਚੈੱਕ ਕਰੋ / Check again</button></section>}
       {unlocked && screen === "home" && <section className="welcome">
         <p className="eyebrow"><span className="ready-dot" />ਪੰਜਾਬੀ ਵਿੱਚ ਤੁਹਾਡੇ ਨਾਲ</p><h1 lang="pa">ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਜੀ</h1><p className="welcome-question" lang="pa">ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰਾਂ?</p><p className="english">How can I help you today?</p>
-        <div className="home-choices"><button className="choice primary" onClick={() => navigate("conversation")}><Mic aria-hidden="true" /><Bilingual pa="ਗੱਲਬਾਤ ਕਰੋ" en="Translate a conversation" /><ChevronRight className="choice-arrow" aria-hidden="true" /></button><button className="choice" onClick={() => navigate("mail")}><MailOpen aria-hidden="true" /><Bilingual pa="ਚਿੱਠੀ ਜਾਂ ਈਮੇਲ ਸਮਝੋ" en="Understand a letter or email" /><ChevronRight className="choice-arrow" aria-hidden="true" /></button></div>
+        <div className="home-choices"><button className="choice primary" onClick={() => navigate("conversation")}><Mic aria-hidden="true" /><Bilingual pa="ਗੱਲਬਾਤ ਕਰੋ" en="Translate a conversation" /><ChevronRight className="choice-arrow" aria-hidden="true" /></button><button className="choice" onClick={() => navigate("mail")}><MailOpen aria-hidden="true" /><Bilingual pa="ਚਿੱਠੀ ਜਾਂ ਈਮੇਲ ਸਮਝੋ" en="Understand a letter or email" /><ChevronRight className="choice-arrow" aria-hidden="true" /></button><button className="choice" onClick={() => navigate("appointments")}><CalendarDays aria-hidden="true" /><Bilingual pa="ਮੇਰੀਆਂ ਮੁਲਾਕਾਤਾਂ" en="Appointments & reminders" /><ChevronRight className="choice-arrow" aria-hidden="true" /></button></div>
         <div className="home-footer"><ShieldCheck size={21} aria-hidden="true" /><p><span lang="pa">ਤੁਹਾਡੀ ਬੋਲੀ, ਤੁਹਾਡਾ ਸਾਥੀ।</span><small>Take your time. We’ll go one step at a time.</small></p></div>
       </section>}
+      {unlocked && screen === "appointments" && <section>{(playing || loadingAudio) && <button className="button" onClick={stopPlayback}><Pause aria-hidden="true" /><Bilingual pa="ਆਵਾਜ਼ ਰੋਕੋ" en="Stop voice" /></button>}<CalendarPanel isOwner={!!status?.isOwner} onSpeak={(content, language) => { void playSpeech(content, language); }} /></section>}
       {unlocked && screen === "conversation" && <section>
         <div className="section-heading"><p className="eyebrow">ENGLISH ↔ ਪੰਜਾਬੀ · AUTOMATIC</p><h1 lang="pa">ਆਓ ਗੱਲ ਕਰੀਏ</h1><p lang="pa" className="conversation-tip">ਇੱਕ ਵਾਰ ਇੱਕ ਜਣਾ ਬੋਲੋ। ਅਨੁਵਾਦ ਪੂਰਾ ਸੁਣ ਕੇ ਜਵਾਬ ਦਿਓ ਜੀ।</p><p className="english">Speak one at a time. Let the translation finish before replying.</p></div>
         <PrivacyNote />
@@ -374,7 +377,7 @@ export default function Saathi() {
         {status.isOwner && status.configured && <div className="settings-block"><h2>Try the Punjabi voice</h2><p className="small">Play a short greeting before handing the phone to your grandparents.</p><button className="button" disabled={Boolean(busy)} onClick={() => playing || loadingAudio ? stopPlayback() : void playSpeech("ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਜੀ। ਮੈਂ ਤੁਹਾਡਾ ਸਾਥੀ ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਗੱਲਬਾਤ ਦਾ ਅਨੁਵਾਦ ਕਰ ਸਕਦਾ ਹਾਂ ਅਤੇ ਚਿੱਠੀ ਸੌਖੀ ਪੰਜਾਬੀ ਵਿੱਚ ਸਮਝਾ ਸਕਦਾ ਹਾਂ।", "pa")}>{playing || loadingAudio ? <Pause aria-hidden="true" /> : <Volume2 aria-hidden="true" />}<span>{playing || loadingAudio ? "Stop voice test" : "Test Punjabi voice"}</span></button>{loadingAudio && <p className="small" role="status">Preparing the greeting…</p>}<p className="ai-label">AI-generated voice</p></div>}
         {status.isOwner && status.configured && <div className="settings-block"><h2>Family feedback</h2><p className="small">Ratings and optional notes only. Letters, transcripts and audio are never included.</p><button className="button" disabled={Boolean(busy)} onClick={() => void loadFeedback()}>Load recent feedback</button>{feedback.length > 0 && <ul className="feedback-list">{feedback.map((item, i) => <li key={i}><strong>{item.rating === "helpful" ? "Helpful" : "Not clear"}</strong><span>{item.mode}</span>{item.note && <p>{item.note}</p>}<small>{new Date(item.createdAt).toLocaleString()}</small></li>)}</ul>}</div>}
         <div className="settings-block"><h2 lang="pa">ਫੋਨ ਦੀ ਸਕ੍ਰੀਨ ਉੱਤੇ ਰੱਖੋ</h2><p>Safari → Share → Add to Home Screen.</p><p className="small">ਇਸ ਨਾਲ ਸਾਥੀ ਫੋਨ ਦੀ ਮੁੱਖ ਸਕ੍ਰੀਨ ਤੋਂ ਖੁੱਲ੍ਹ ਜਾਵੇਗਾ। / This adds an easy-to-find Saathi icon to the home screen.</p></div>
-        <div className="settings-block"><h2 lang="pa">ਤੁਹਾਡੀ ਜਾਣਕਾਰੀ</h2><p className="small">Translations use an internet connection and are sent to Google. Saathi does not keep your letters, photos or recordings. Translation can make mistakes; double-check important names, amounts and dates against the original.</p><p className="small" lang="pa">ਜ਼ਰੂਰੀ ਨਾਮ, ਰਕਮਾਂ ਅਤੇ ਤਾਰੀਖਾਂ ਅਸਲ ਚਿੱਠੀ ਨਾਲ ਮਿਲਾ ਲਓ ਜੀ।</p></div>
+        <div className="settings-block"><h2 lang="pa">ਤੁਹਾਡੀ ਜਾਣਕਾਰੀ</h2><p className="small">Translations use an internet connection and are sent to Google. Saathi does not keep your letters, photos or recordings. Selected calendar appointments and connection details are stored encrypted for reminders; disconnecting iCloud removes the saved calendar and appointments. Translation can make mistakes; double-check important names, amounts and dates against the original.</p><p className="small" lang="pa">ਜ਼ਰੂਰੀ ਨਾਮ, ਰਕਮਾਂ ਅਤੇ ਤਾਰੀਖਾਂ ਅਸਲ ਚਿੱਠੀ ਨਾਲ ਮਿਲਾ ਲਓ ਜੀ।</p></div>
         {!status.isOwner && <button className="button" disabled={Boolean(busy)} onClick={async () => { clearCurrent(); try { await jsonRequest("/api/logout", {}); await refreshStatus(); setScreen("home"); } catch (e) { setError(message(e)); } }}>ਇਸ ਫੋਨ ਤੋਂ ਲੌਕ ਕਰੋ / Lock this phone</button>}
         {status.isOwner && <a className="quiet-link" href="/signout-with-chatgpt?return_to=/" target="_top">Sign out of family setup</a>}
       </section>}
